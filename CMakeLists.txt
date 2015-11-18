@@ -19,6 +19,8 @@ find_package(OpenCV REQUIRED)
 
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR})
+
 add_subdirectory(ORUtils)
 
 set(GSLICR_LIB
@@ -46,3 +48,18 @@ target_link_libraries(gSLICr_lib ${CUDA_LIBRARY})
 
 add_executable(demo demo.cpp)
 target_link_libraries(demo gSLICr_lib ${OpenCV_LIBS})
+
+install(FILES ${GSLICR_LIB} DESTINATION include/gSLIC_lib)
+install(TARGETS gSLICr_lib DESTINATION lib LIBRARY DESTINATION)
+
+# add examples here
+file(GLOB exes "exes/*.cpp")
+foreach(exe IN ITEMS ${exes})
+  get_filename_component(script_name ${exe} NAME_WE)
+
+  # Add executable
+  add_executable(${script_name} ${exe})
+  target_link_libraries(${script_name}
+    gSLICr_lib
+    ${OpenCV_LIBS})
+endforeach()
