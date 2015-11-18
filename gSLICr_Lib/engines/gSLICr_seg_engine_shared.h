@@ -150,6 +150,24 @@ _CPU_AND_GPU_CODE_ inline void draw_superpixel_boundry_shared(const int* idx_img
 	}
 }
 
+_CPU_AND_GPU_CODE_ inline void set_seg_boundary_shared
+(const int* idx_img, int* out_img, gSLICr::Vector2i img_size, int x, int y)
+{
+	int idx = y * img_size.x + x;
+
+	if (idx_img[idx] != idx_img[idx + 1]
+	 || idx_img[idx] != idx_img[idx - 1]
+	 || idx_img[idx] != idx_img[(y - 1)*img_size.x + x]
+	 || idx_img[idx] != idx_img[(y + 1)*img_size.x + x]) {
+		out_img[idx] = 0;
+	}
+	else {
+		out_img[idx] = idx_img[idx];
+	}
+}
+
+
+
 _CPU_AND_GPU_CODE_ inline void finalize_reduction_result_shared(const gSLICr::objects::spixel_info* accum_map, gSLICr::objects::spixel_info* spixel_list, gSLICr::Vector2i map_size, int no_blocks_per_spixel, int x, int y)
 {
 	int spixel_idx = y * map_size.x + x;

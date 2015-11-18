@@ -45,7 +45,10 @@ namespace gSLICr
 			};
 
 			void Perform_Segmentation(UChar4Image* in_img);
-			virtual void Draw_Segmentation_Result(UChar4Image* out_img){};
+
+			virtual void Draw_Segmentation_Result(UChar4Image* out_img){}
+
+			virtual const IntImage* Get_Seg_Mask_With_Boundary() = 0;
 		};
 	}
 }

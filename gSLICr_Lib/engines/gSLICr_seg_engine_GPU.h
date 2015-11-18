@@ -28,6 +28,9 @@ namespace gSLICr
 			~seg_engine_GPU();
 
 			void Draw_Segmentation_Result(UChar4Image* out_img);
+
+			/// set the segment boundary
+			const IntImage* Get_Seg_Mask_With_Boundary();
 		};
 	}
 }

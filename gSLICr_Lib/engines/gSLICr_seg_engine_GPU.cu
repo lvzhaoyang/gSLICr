@@ -28,6 +28,8 @@ __global__ void Finalize_Reduction_Result_device(const spixel_info* accum_map, s
 
 __global__ void Draw_Segmentation_Result_device(const int* idx_img, Vector4u* sourceimg, Vector4u* outimg, Vector2i img_size);
 
+__global__ void Set_Seg_Boundary_device(const int* idx_img, int* out_img, Vector2i img_size);
+
 // ----------------------------------------------------
 //
 //	host function implementations
@@ -180,7 +182,20 @@ void gSLICr::engines::seg_engine_GPU::Draw_Segmentation_Result(UChar4Image* out_
 	out_img->UpdateHostFromDevice();
 }
 
+const IntImage* gSLICr::engines::seg_engine_GPU::Get_Seg_Mask_With_Boundary() {
+  Vector2i img_size = idx_img->noDims;
 
+  IntImage* idx_img_out = new IntImage(img_size, true, true);
+//  idx_img_out_ptr->SetFrom(idx_img, ORUtils::MemoryBlock<int>::CPU_TO_CPU);
+  int* idx_img_out_ptr_dev = idx_img_out->GetData(MEMORYDEVICE_CUDA);
+  const int* idx_img_ptr = idx_img->GetData(MEMORYDEVICE_CUDA);
+
+  dim3 blockSize(BLOCK_DIM, BLOCK_DIM);
+  dim3 gridSize((int)ceil((float)img_size.x / (float)blockSize.x), (int)ceil((float)img_size.y / (float)blockSize.y));
+  Set_Seg_Boundary_device<<<gridSize, blockSize>>>(idx_img_ptr, idx_img_out_ptr_dev, img_size);
+  idx_img_out->UpdateHostFromDevice();
+  return idx_img_out;
+}
 
 // ----------------------------------------------------
 //
@@ -203,6 +218,14 @@ __global__ void Draw_Segmentation_Result_device(const int* idx_img, Vector4u* so
 	if (x == 0 || y == 0 || x > img_size.x - 2 || y > img_size.y - 2) return;
 
 	draw_superpixel_boundry_shared(idx_img, sourceimg, outimg, img_size, x, y);
+}
+
+__global__ void Set_Seg_Boundary_device(const int* idx_img, int* out_img, Vector2i img_size)
+{
+	int x = threadIdx.x + blockIdx.x * blockDim.x, y = threadIdx.y + blockIdx.y * blockDim.y;
+	if (x == 0 || y == 0 || x > img_size.x - 2 || y > img_size.y - 2) return;
+
+	set_seg_boundary_shared(idx_img, out_img, img_size, x, y);
 }
 
 __global__ void Init_Cluster_Centers_device(const Vector4f* inimg, spixel_info* out_spixel, Vector2i map_size, Vector2i img_size, int spixel_size)

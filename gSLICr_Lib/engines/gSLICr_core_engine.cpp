@@ -22,9 +22,15 @@ void gSLICr::engines::core_engine::Process_Frame(UChar4Image* in_img)
 	slic_seg_engine->Perform_Segmentation(in_img);
 }
 
-const IntImage * gSLICr::engines::core_engine::Get_Seg_Res()
+const IntImage * gSLICr::engines::core_engine::Get_Seg_Res(bool hasBoundary)
 {
-	return slic_seg_engine->Get_Seg_Mask();
+  if (hasBoundary) {
+    // set the superpixel boundary variables to 0
+    // it will benefit the superpixels to set up a higher older data-structure
+    return slic_seg_engine->Get_Seg_Mask_With_Boundary();
+  } else {
+    return slic_seg_engine->Get_Seg_Mask();
+  }
 }
 
 void gSLICr::engines::core_engine::Draw_Segmentation_Result(UChar4Image* out_img)
