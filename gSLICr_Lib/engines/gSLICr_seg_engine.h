@@ -22,7 +22,7 @@ namespace gSLICr
 			UChar4Image *source_img; ///< rgb_img
 			Float4Image *cvt_img;
 			IntImage *idx_img;		 ///< segment indices
-			ShortImage* dep_img;	 ///< depth image
+			FloatImage* dep_img;	 ///< depth image
 
 			// superpixel map
 			SpixelMap* spixel_map;
@@ -49,7 +49,7 @@ namespace gSLICr
 
 			void Perform_Segmentation(UChar4Image* in_img);
 
-			void Perform_Segmentation(UChar4Image* in_img, ShortImage* in_depth);
+			void Perform_Segmentation(UChar4Image* in_img, FloatImage* in_depth);
 
 			virtual void Draw_Segmentation_Result(UChar4Image* out_img){}
 

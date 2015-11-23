@@ -23,7 +23,7 @@ void gSLICr::engines::core_engine::Process_Frame(UChar4Image* in_img)
 }
 
 void gSLICr::engines::core_engine::Process_Frame(UChar4Image* in_img,
-                                                 ShortImage* in_depth)
+                                                 FloatImage* in_depth)
 {
   slic_seg_engine->Perform_Segmentation(in_img, in_depth);
 }

@@ -44,10 +44,10 @@ void seg_engine::Perform_Segmentation(UChar4Image* in_img)
 }
 
 void seg_engine::Perform_Segmentation(UChar4Image* in_img,
-                                      ShortImage* in_depth)
+                                      FloatImage* in_depth)
 {
   source_img->SetFrom(in_img, ORUtils::MemoryBlock<Vector4u>::CPU_TO_CUDA);
-  dep_img->SetFrom(in_depth, ORUtils::MemoryBlock<short>::CPU_TO_CUDA);
+  dep_img->SetFrom(in_depth, ORUtils::MemoryBlock<float>::CPU_TO_CUDA);
 
   Cvt_Img_Space(source_img, cvt_img, gSLICr_settings.color_space);
 

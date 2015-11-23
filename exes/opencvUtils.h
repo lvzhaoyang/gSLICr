@@ -44,13 +44,28 @@ void load_image(const gSLICr::IntImage* inImg, cv::Mat& outimg) {
     }
 }
 
-void load_depth(const cv::Mat& inDep, gSLICr::ShortImage* outDep) {
-    short* outdep_ptr = outDep->GetData(MEMORYDEVICE_CPU);
+void load_depth(const cv::Mat& inDep, gSLICr::FloatImage* outDep) {
+    float* outdep_ptr = outDep->GetData(MEMORYDEVICE_CPU);
 
-    for (int y = 0; y < outDep->noDims.y; y++) {
-        for (int x =0; x < outDep->noDims.x; x++) {
-            int idx = x + y * outDep->noDims.x;
-            outdep_ptr[idx] = inDep.at<short>(y, x);
+    switch(inDep.depth()) {
+        case CV_16U: {
+            for (int y = 0; y < outDep->noDims.y; y++) {
+                for (int x =0; x < outDep->noDims.x; x++) {
+                    int idx = x + y * outDep->noDims.x;
+                    outdep_ptr[idx] = inDep.at<short>(y, x) / 1000.0f;
+                }
+            }
+            break;
+        }
+        case CV_32F: {
+            for (int y = 0; y < outDep->noDims.y; y++) {
+                for (int x =0; x < outDep->noDims.x; x++) {
+                    int idx = x + y * outDep->noDims.x;
+                    outdep_ptr[idx] = inDep.at<float>(y, x) / 1000.0f;
+                }
+            }
+            break;
         }
     }
+
 }

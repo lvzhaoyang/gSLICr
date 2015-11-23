@@ -9,10 +9,15 @@ using namespace gSLICr;
 
 int main() {
 
-  cv::Mat I, D;   // rgb image and depth image
+  cv::Mat I, D_raw, D;   // rgb image and depth image
   I = cv::imread("../files/00000-color.png", CV_LOAD_IMAGE_ANYCOLOR);
-  D = cv::imread("../files/00000-depth.png", CV_LOAD_IMAGE_ANYDEPTH);
-  CV_Assert(I.size() == D.size());
+  D_raw = cv::imread("../files/00000-depth.png", CV_LOAD_IMAGE_ANYDEPTH);
+  //  CV_Assert(I.size() == D_raw.size());
+  D_raw.convertTo(D, CV_32FC1);
+
+  // bilateral filter over depth image
+  cv::Mat bfD;
+  cv::bilateralFilter(D, bfD, 7, 0.03, 5);    // 30mm, 5 pixels
 
   // for visualization
   cv::Mat boundry_draw_frame; boundry_draw_frame.create(I.size(), CV_8UC3);
@@ -34,12 +39,12 @@ int main() {
   engines::core_engine* gSLICr_engine = new engines::core_engine(my_settings);
 
   UChar4Image* in_img = new UChar4Image(my_settings.img_size, true, true);
-  ShortImage* in_depth = new ShortImage(my_settings.img_size, true, true);
+  FloatImage* in_depth = new FloatImage(my_settings.img_size, true, true);
   UChar4Image* out_img = new UChar4Image(my_settings.img_size, true, true);
 
   // load image into color space
   load_image(I, in_img);
-  load_depth(D, in_depth);
+  load_depth(bfD, in_depth);
 
   StopWatchInterface *my_timer; sdkCreateTimer(&my_timer);
   sdkResetTimer(&my_timer); sdkStartTimer(&my_timer);
