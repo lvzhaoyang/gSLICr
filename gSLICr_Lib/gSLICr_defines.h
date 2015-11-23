@@ -61,6 +61,7 @@ namespace gSLICr
 	typedef  ORUtils::Image<Vector4f> Float4Image;
 	typedef  ORUtils::Image<int> IntImage;
 	typedef  ORUtils::Image<Vector4u> UChar4Image;
+	typedef  ORUtils::Image<short> ShortImage;
 
 	//------------------------------------------------------
 	// 
@@ -72,7 +73,8 @@ namespace gSLICr
 	{
 		CIELAB = 0,
 		XYZ,
-		RGB
+		RGB,
+		RGBD
 	} COLOR_SPACE;
 
 	typedef enum

@@ -13,6 +13,7 @@ namespace gSLICr
 
 			int no_grid_per_center;
 			ORUtils::Image<objects::spixel_info>* accum_map;
+			ORUtils::Image<objects::spixel_d_info>* accum_d_map;
 			IntImage* tmp_idx_img;
 
 		protected:

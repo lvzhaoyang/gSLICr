@@ -16,14 +16,17 @@ namespace gSLICr
 			// normalizing distances
 			float max_color_dist;
 			float max_xy_dist;
+			float max_depth_dist;
 
 			// images
-			UChar4Image *source_img;
+			UChar4Image *source_img; ///< rgb_img
 			Float4Image *cvt_img;
-			IntImage *idx_img;
+			IntImage *idx_img;		 ///< segment indices
+			ShortImage* dep_img;	 ///< depth image
 
 			// superpixel map
 			SpixelMap* spixel_map;
+			SpixelDMap* spixel_d_map;
 			int spixel_size;
 
 			objects::settings gSLICr_settings;
@@ -42,9 +45,11 @@ namespace gSLICr
 			const IntImage* Get_Seg_Mask() const {
 				idx_img->UpdateHostFromDevice();
 				return idx_img;
-			};
+			}
 
 			void Perform_Segmentation(UChar4Image* in_img);
+
+			void Perform_Segmentation(UChar4Image* in_img, ShortImage* in_depth);
 
 			virtual void Draw_Segmentation_Result(UChar4Image* out_img){}
 
