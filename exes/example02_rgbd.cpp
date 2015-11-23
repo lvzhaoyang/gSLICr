@@ -22,9 +22,10 @@ int main() {
   objects::settings my_settings;
   my_settings.img_size.x = I.cols;
   my_settings.img_size.y = I.rows;
-  my_settings.no_segs = 500;
-  my_settings.spixel_size = 16;
+  my_settings.no_segs = 100;
+  my_settings.spixel_size = 32;
   my_settings.coh_weight = 0.6f;
+  my_settings.dh_weight = 0.5f;
   my_settings.no_iters = 5;
   my_settings.color_space = RGBD; // gSLICr::CIELAB for Lab, or gSLICr::RGB for RGB
   my_settings.seg_method = GIVEN_SIZE; // or gSLICr::GIVEN_NUM for given number

@@ -13,7 +13,8 @@ namespace gSLICr
 			int no_segs;
 			int spixel_size;
 			int no_iters;
-			float coh_weight;			
+			float coh_weight;
+			float dh_weight;
 			bool do_enforce_connectivity;
 
 			COLOR_SPACE color_space;

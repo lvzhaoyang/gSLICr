@@ -21,7 +21,7 @@ namespace gSLICr
 			Vector4f color_info;
 			int id;
 			int no_pixels;
-			float centerD;		//< depth in scaled Z coordinate
+			float depth_info;		//< depth in scaled Z coordinate
 //			static float fx;
 //			static float fy;
 //			static float cx;

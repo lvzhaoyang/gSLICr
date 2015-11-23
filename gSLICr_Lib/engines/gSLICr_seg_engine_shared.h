@@ -102,15 +102,13 @@ _CPU_AND_GPU_CODE_ inline void init_cluster_centers_shared(const gSLICr::Vector4
 	img_x = img_x >= img_size.x ? (x * spixel_size + img_size.x) / 2 : img_x;
 	img_y = img_y >= img_size.y ? (y * spixel_size + img_size.y) / 2 : img_y;
 
-	// TODO: go one step towards gradients direction
-
 	out_spixel[cluster_idx].id = cluster_idx;
 	out_spixel[cluster_idx].center = gSLICr::Vector2f((float)img_x, (float)img_y);
 	out_spixel[cluster_idx].color_info = inimg[img_y*img_size.x + img_x];
 
 	out_spixel[cluster_idx].no_pixels = 0;
 
-//	out_spixel[cluster_idx].centerD = indepth[img_y*img_size.x + img_x];
+	out_spixel[cluster_idx].depth_info = indepth[img_y*img_size.x + img_x];
 }
 
 
@@ -128,7 +126,7 @@ _CPU_AND_GPU_CODE_ inline float compute_slic_distance(const gSLICr::Vector4f& pi
 	return sqrtf(retval);
 }
 
-_CPU_AND_GPU_CODE_ inline float compute_slic_distance(const gSLICr::Vector4f& pix, const short d, int x, int y, const gSLICr::objects::spixel_d_info& center_info, float weight, float normalizer_xy, float normalizer_color, float normalizer_depth)
+_CPU_AND_GPU_CODE_ inline float compute_slic_distance(const gSLICr::Vector4f& pix, const short d, int x, int y, const gSLICr::objects::spixel_d_info& center_info, float wXY, float wD, float normalizer_xy, float normalizer_color, float normalizer_depth)
 {
 	float dcolor = (pix.x - center_info.color_info.x)*(pix.x - center_info.color_info.x)
 				 + (pix.y - center_info.color_info.y)*(pix.y - center_info.color_info.y)
@@ -137,7 +135,13 @@ _CPU_AND_GPU_CODE_ inline float compute_slic_distance(const gSLICr::Vector4f& pi
 	float dxy = (x - center_info.center.x) * (x - center_info.center.x)
 			  + (y - center_info.center.y) * (y - center_info.center.y);
 
-	float retval = dcolor * normalizer_color + weight * dxy * normalizer_xy;
+	float ddepth = (d - center_info.depth_info)*(d - center_info.depth_info);
+
+	// depth will play a more important position here.
+	// if depth is not avaliable,
+
+	float retval = dcolor * normalizer_color + wXY * dxy * normalizer_xy +
+		wD * ddepth * normalizer_depth;
 	return sqrtf(retval);
 }
 
@@ -171,7 +175,7 @@ _CPU_AND_GPU_CODE_ inline void find_center_association_shared(const gSLICr::Vect
 	if (minidx >= 0) out_idx_img[idx_img] = minidx;
 }
 
-_CPU_AND_GPU_CODE_ inline void find_center_association_shared(const gSLICr::Vector4f* inimg, const short* indep, const gSLICr::objects::spixel_d_info* in_spixel_map, int* out_idx_img, gSLICr::Vector2i map_size, gSLICr::Vector2i img_size, int spixel_size, float weight, int x, int y, float max_xy_dist, float max_color_dist, float max_depth_dist)
+_CPU_AND_GPU_CODE_ inline void find_center_association_shared(const gSLICr::Vector4f* inimg, const short* indep, const gSLICr::objects::spixel_d_info* in_spixel_map, int* out_idx_img, gSLICr::Vector2i map_size, gSLICr::Vector2i img_size, int spixel_size, float wXY, float wD, int x, int y, float max_xy_dist, float max_color_dist, float max_depth_dist)
 {
 	int idx_img = y * img_size.x + x;
 
@@ -191,7 +195,7 @@ _CPU_AND_GPU_CODE_ inline void find_center_association_shared(const gSLICr::Vect
 		if (ctr_x_check >= 0 && ctr_y_check >= 0 && ctr_x_check < map_size.x && ctr_y_check < map_size.y)
 		{
 			int ctr_idx = ctr_y_check*map_size.x + ctr_x_check;
-			float cdist = compute_slic_distance(inimg[idx_img], indep[idx_img], x, y, in_spixel_map[ctr_idx], weight, max_xy_dist, max_color_dist, max_depth_dist);
+			float cdist = compute_slic_distance(inimg[idx_img], indep[idx_img], x, y, in_spixel_map[ctr_idx], wXY, wD, max_xy_dist, max_color_dist, max_depth_dist);
 			if (cdist < dist)
 			{
 				dist = cdist;

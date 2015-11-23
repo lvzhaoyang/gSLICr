@@ -24,7 +24,7 @@ __global__ void Init_Cluster_Centers_device(const Vector4f* inimg, const short* 
 
 __global__ void Find_Center_Association_device(const Vector4f* inimg, const spixel_info* in_spixel_map, int* out_idx_img, Vector2i map_size, Vector2i img_size, int spixel_size, float weight, float max_xy_dist, float max_color_dist);
 
-__global__ void Find_Center_Association_device(const Vector4f* inimg, const short* indep, const spixel_d_info* in_spixel_map, int* out_idx_img, Vector2i map_size, Vector2i img_size, int spixel_size, float weight, float max_xy_dist, float max_color_dist, float max_depth_dist);
+__global__ void Find_Center_Association_device(const Vector4f* inimg, const short* indep, const spixel_d_info* in_spixel_map, int* out_idx_img, Vector2i map_size, Vector2i img_size, int spixel_size, float wXY, float wD, float max_xy_dist, float max_color_dist, float max_depth_dist);
 
 __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const int* in_idx_img, spixel_info* accum_map, Vector2i map_size, Vector2i img_size, int spixel_size, int no_blocks_per_line);
 
@@ -108,6 +108,9 @@ seg_engine_GPU::seg_engine_GPU(const settings& in_settings) : seg_engine(in_sett
 
 	max_color_dist *= max_color_dist;
 	max_xy_dist *= max_xy_dist;
+
+	max_depth_dist = 2.0 / (7*1e3);
+	max_depth_dist *= max_depth_dist;
 }
 
 gSLICr::engines::seg_engine_GPU::~seg_engine_GPU()
@@ -180,7 +183,7 @@ void gSLICr::engines::seg_engine_GPU::Find_Center_Association()
 	dim3 blockSize(BLOCK_DIM, BLOCK_DIM);
 	dim3 gridSize((int)ceil((float)img_size.x / (float)blockSize.x), (int)ceil((float)img_size.y / (float)blockSize.y));
 
-    Find_Center_Association_device << <gridSize, blockSize >> >(img_ptr, depth_ptr, spixel_d_list, idx_ptr, map_size, img_size, spixel_size, gSLICr_settings.coh_weight,max_xy_dist,max_color_dist, max_depth_dist);
+    Find_Center_Association_device << <gridSize, blockSize >> >(img_ptr, depth_ptr, spixel_d_list, idx_ptr, map_size, img_size, spixel_size, gSLICr_settings.coh_weight, gSLICr_settings.dh_weight, max_xy_dist,max_color_dist, max_depth_dist);
   } else {
     std::runtime_error("Ambiguous choice over pixel or voxel segmentation");
   }
@@ -329,12 +332,12 @@ __global__ void Find_Center_Association_device(const Vector4f* inimg, const spix
 	find_center_association_shared(inimg, in_spixel_map, out_idx_img, map_size, img_size, spixel_size, weight, x, y,max_xy_dist,max_color_dist);
 }
 
-__global__ void Find_Center_Association_device(const Vector4f* inimg, const short* indep, const spixel_d_info* in_spixel_map, int* out_idx_img, Vector2i map_size, Vector2i img_size, int spixel_size, float weight, float max_xy_dist, float max_color_dist, float max_depth_dist)
+__global__ void Find_Center_Association_device(const Vector4f* inimg, const short* indep, const spixel_d_info* in_spixel_map, int* out_idx_img, Vector2i map_size, Vector2i img_size, int spixel_size, float wXY, float wD, float max_xy_dist, float max_color_dist, float max_depth_dist)
 {
 	int x = threadIdx.x + blockIdx.x * blockDim.x, y = threadIdx.y + blockIdx.y * blockDim.y;
 	if (x > img_size.x - 1 || y > img_size.y - 1) return;
 
-	find_center_association_shared(inimg, indep, in_spixel_map, out_idx_img, map_size, img_size, spixel_size, weight, x, y,max_xy_dist,max_color_dist, max_depth_dist);
+	find_center_association_shared(inimg, indep, in_spixel_map, out_idx_img, map_size, img_size, spixel_size, wXY, wD, x, y,max_xy_dist,max_color_dist, max_depth_dist);
 }
 
 __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const int* in_idx_img, spixel_info* accum_map, Vector2i map_size, Vector2i img_size, int spixel_size, int no_blocks_per_line)
@@ -445,11 +448,13 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 
 	__shared__ Vector4f color_shared[BLOCK_DIM*BLOCK_DIM];
 	__shared__ Vector2f xy_shared[BLOCK_DIM*BLOCK_DIM];
+	__shared__ short depth_shared[BLOCK_DIM*BLOCK_DIM];
 	__shared__ int count_shared[BLOCK_DIM*BLOCK_DIM];
 	__shared__ bool should_add;
 
 	color_shared[local_id] = Vector4f(0, 0, 0, 0);
 	xy_shared[local_id] = Vector2f(0, 0);
+	depth_shared[local_id] = 0;
 	count_shared[local_id] = 0;
 	should_add = false;
 	__syncthreads();
@@ -480,6 +485,7 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 			if (in_idx_img[img_idx] == spixel_id)
 			{
 				color_shared[local_id] = inimg[img_idx];
+				depth_shared[local_id] = indep[img_idx];
 				xy_shared[local_id] = Vector2f(x_img, y_img);
 				count_shared[local_id] = 1;
 				should_add = true;
@@ -495,6 +501,7 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 			color_shared[local_id] += color_shared[local_id + 128];
 			xy_shared[local_id] += xy_shared[local_id + 128];
 			count_shared[local_id] += count_shared[local_id + 128];
+			depth_shared[local_id] += depth_shared[local_id + 128];
 		}
 		__syncthreads();
 
@@ -503,6 +510,7 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 			color_shared[local_id] += color_shared[local_id + 64];
 			xy_shared[local_id] += xy_shared[local_id + 64];
 			count_shared[local_id] += count_shared[local_id + 64];
+			depth_shared[local_id] += depth_shared[local_id + 64];
 		}
 		__syncthreads();
 
@@ -528,6 +536,13 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 			count_shared[local_id] += count_shared[local_id + 4];
 			count_shared[local_id] += count_shared[local_id + 2];
 			count_shared[local_id] += count_shared[local_id + 1];
+
+			depth_shared[local_id] += depth_shared[local_id + 32];
+			depth_shared[local_id] += depth_shared[local_id + 16];
+			depth_shared[local_id] += depth_shared[local_id + 8];
+			depth_shared[local_id] += depth_shared[local_id + 4];
+			depth_shared[local_id] += depth_shared[local_id + 2];
+			depth_shared[local_id] += depth_shared[local_id + 1];
 		}
 	}
 	__syncthreads();
@@ -538,6 +553,7 @@ __global__ void Update_Cluster_Center_device(const Vector4f* inimg, const short*
 		accum_map[accum_map_idx].center = xy_shared[0];
 		accum_map[accum_map_idx].color_info = color_shared[0];
 		accum_map[accum_map_idx].no_pixels = count_shared[0];
+		accum_map[accum_map_idx].depth_info = depth_shared[0];
 	}
 }
 
