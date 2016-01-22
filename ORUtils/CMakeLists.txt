@@ -30,6 +30,7 @@ ${ORUTILS_HEADERS}
 #############################
 
 SOURCE_GROUP("" FILES ${ORUTILS_HEADERS})
+install(FILES ${ORUTILS_HEADERS} DESTINATION include/ORUtils)
 
 ##############################################################
 # Specify the include directories, target and link libraries #

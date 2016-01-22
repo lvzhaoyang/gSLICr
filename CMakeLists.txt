@@ -23,7 +23,12 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 add_subdirectory(ORUtils)
 
-set(GSLICR_LIB
+set(GSLICR_SRC
+gSLICr_Lib/gSLICr_defines.h
+gSLICr_Lib/gSLICr.h
+)
+
+set(GSLICR_ENGINE
 gSLICr_Lib/engines/gSLICr_core_engine.h
 gSLICr_Lib/engines/gSLICr_seg_engine.h
 gSLICr_Lib/engines/gSLICr_seg_engine_GPU.h
@@ -31,17 +36,19 @@ gSLICr_Lib/engines/gSLICr_seg_engine_shared.h
 gSLICr_Lib/engines/gSLICr_core_engine.cpp
 gSLICr_Lib/engines/gSLICr_seg_engine.cpp
 gSLICr_Lib/engines/gSLICr_seg_engine_GPU.cu
+)
+
+set(GSLICR_OBJECT
 gSLICr_Lib/objects/gSLICr_settings.h
 gSLICr_Lib/objects/gSLICr_spixel_info.h
-gSLICr_Lib/gSLICr_defines.h
-gSLICr_Lib/gSLICr.h
 )
+
 
 list(APPEND "-std=c++11 -ftree-vectorize")
 SOURCE_GROUP(engines FILES ${GSLICR_LIB})
 
 cuda_add_library(gSLICr_lib
-			${GSLICR_LIB}
+                        ${GSLICR_SRC} ${GSLICR_ENGINE} ${GSLICR_OBJECT}
 			NVTimer.h
 			OPTIONS -gencode arch=compute_30,code=compute_30)
 target_link_libraries(gSLICr_lib ${CUDA_LIBRARY})
@@ -49,8 +56,11 @@ target_link_libraries(gSLICr_lib ${CUDA_LIBRARY})
 add_executable(demo demo.cpp)
 target_link_libraries(demo gSLICr_lib ${OpenCV_LIBS})
 
-install(FILES ${GSLICR_LIB} DESTINATION include/gSLIC_lib)
-install(TARGETS gSLICr_lib DESTINATION lib LIBRARY DESTINATION)
+install(FILES ${GSLICR_SRC} DESTINATION include/gSLICr_lib)
+install(FILES ${GSLICR_ENGINE} DESTINATION include/gSLICr_lib/engines)
+install(FILES ${GSLICR_OBJECT} DESTINATION include/gSLICr_lib/objects)
+
+install(TARGETS gSLICr_lib DESTINATION lib)
 
 # add examples here
 file(GLOB exes "exes/*.cpp")
